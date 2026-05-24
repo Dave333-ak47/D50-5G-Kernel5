@@ -8,7 +8,7 @@ env:
   REPO_URL: https://github.com/coolsnowwolf/lede
   REPO_BRANCH: master
   FEEDS_CONF: feeds.conf.default
-  CONFIG_FILE: .config
+  CONFIG_FILE: ipq50xx_full.config
   DIY_P1_SH: diy-part1.sh
   DIY_P2_SH: diy-part2.sh
   UPLOAD_BIN_DIR: false
@@ -63,7 +63,17 @@ jobs:
     - name: Load custom configuration
       run: |
         [ -e files ] && mv files openwrt/files
-        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
+        # Forza il caricamento usando il nome esatto del tuo file .config
+        if [ -e ipq50xx_full.config ]; then
+          cp ipq50xx_full.config openwrt/.config
+        elif [ -e .config ]; then
+          cp .config openwrt/.config
+        fi
+        
+        # Disattiva vlmcsd e pacchetti KMS molesti che rompono GCC 11+
+        echo "CONFIG_PACKAGE_vlmcsd=n" >> openwrt/.config
+        echo "CONFIG_PACKAGE_luci-app-vlmcsd=n" >> openwrt/.config
+        
         chmod +x $DIY_P2_SH
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
@@ -97,7 +107,8 @@ jobs:
       if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
       run: |
         mkdir -p $GITHUB_WORKSPACE/firmware_bin
-        find openwrt/bin/targets/ -type f \( -name "*.bin" -o -name "*.img" -o -name "*.ubi" \) -exec cp {} $GITHUB_WORKSPACE/firmware_bin/ \;
+        # Cerca i file binari generati per qualcommax ed esclude le cartelle generiche intermediate
+        find openwrt/bin/targets/qualcommax/ -type f \( -name "*.bin" -o -name "*.img" -o -name "*.ubi" \) -exec cp {} $GITHUB_WORKSPACE/firmware_bin/ \;
         echo "FIRMWARE=$GITHUB_WORKSPACE/firmware_bin" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
 
@@ -114,7 +125,7 @@ jobs:
       run: |
         echo "release_tag=$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
         touch release.txt
-        echo "Firmware compilato con successo per Xunison Exigo D50!" >> release.txt
+        echo "Firmware Qualcomm IPQ50xx compilato con successo!" >> release.txt
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Upload firmware to release
