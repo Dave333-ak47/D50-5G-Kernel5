@@ -1,0 +1,13 @@
+files/etc/board.json
+{
+  "model": {
+    "id": "exigo,d50-5g",
+    "name": "Exigo Hub D50 5G"
+  },
+  "network": {
+    "lan": {
+      "ifname": "eth0",
+      "protocol": "static"
+    }
+  }
+}
